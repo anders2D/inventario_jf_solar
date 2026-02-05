@@ -11,20 +11,24 @@ import {
   ImageIcon,
   X,
   Maximize2,
-  Trash2
+  Trash2,
+  Eye
 } from 'lucide-react';
 import { NewItemModal } from './NewItemModal';
+import { ProductDetailsModal } from './ProductDetailsModal';
 
 interface InventoryViewProps {
   inventory: InventoryItem[];
   categories: string[];
+  transactions?: any[];
   onUpdateItem: (item: InventoryItem) => void;
   onDeleteItem?: (id: string) => void;
 }
 
 export const InventoryView: React.FC<InventoryViewProps> = ({ 
   inventory, 
-  categories, 
+  categories,
+  transactions = [],
   onUpdateItem,
   onDeleteItem
 }) => {
@@ -33,6 +37,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [detailsItem, setDetailsItem] = useState<InventoryItem | null>(null);
 
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => {
@@ -91,19 +96,28 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm border border-slate-200/50 dark:border-slate-800/50">
-          <button 
-            onClick={() => setViewType('grid')}
-            className={`p-2.5 rounded-xl transition-all ${viewType === 'grid' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setEditingItem({} as InventoryItem)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm"
           >
-            <LayoutGrid size={20} />
+            <Package size={18} />
+            Nuevo Item
           </button>
-          <button 
-            onClick={() => setViewType('list')}
-            className={`p-2.5 rounded-xl transition-all ${viewType === 'list' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-          >
-            <List size={20} />
-          </button>
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm border border-slate-200/50 dark:border-slate-800/50">
+            <button 
+              onClick={() => setViewType('grid')}
+              className={`p-2.5 rounded-xl transition-all ${viewType === 'grid' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+            >
+              <LayoutGrid size={20} />
+            </button>
+            <button 
+              onClick={() => setViewType('list')}
+              className={`p-2.5 rounded-xl transition-all ${viewType === 'list' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+            >
+              <List size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -188,6 +202,13 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 {/* Card Actions Footer */}
                 <div className="px-6 py-4 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                   <button 
+                    onClick={() => setDetailsItem(item)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-500 hover:text-purple-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                  >
+                    <Eye size={14} />
+                    Detalles
+                  </button>
+                  <button 
                     onClick={() => setEditingItem(item)}
                     className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-500 hover:text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-200/50 dark:border-slate-700/50"
                   >
@@ -266,6 +287,12 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     <td className="px-8 py-5 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button 
+                          onClick={() => setDetailsItem(item)}
+                          className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-purple-600 rounded-xl transition-all active:scale-90"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <button 
                           onClick={() => setEditingItem(item)}
                           className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-blue-600 rounded-xl transition-all active:scale-90"
                         >
@@ -304,16 +331,24 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* Edit/Create Modal */}
       {editingItem && (
         <NewItemModal 
           isOpen={!!editingItem} 
           onClose={() => setEditingItem(null)} 
           onSave={handleEditSave}
           categories={categories}
-          initialData={editingItem}
+          initialData={editingItem && editingItem.id ? editingItem : undefined}
         />
       )}
+
+      {/* Details Modal */}
+      <ProductDetailsModal
+        isOpen={!!detailsItem}
+        product={detailsItem}
+        transactions={transactions}
+        onClose={() => setDetailsItem(null)}
+      />
     </div>
   );
 };

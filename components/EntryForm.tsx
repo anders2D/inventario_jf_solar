@@ -1,16 +1,17 @@
 
-import React, { useState } from 'react';
-import { InventoryItem } from '../types';
-import { ArrowDownCircle, Save, PlusCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { InventoryItem, Transaction } from '../types';
+import { ArrowDownCircle, Save, PlusCircle, History } from 'lucide-react';
 import { NewItemModal } from './NewItemModal';
 
 interface EntryFormProps {
   inventory: InventoryItem[];
+  transactions?: Transaction[];
   onSubmit: (itemId: string, quantity: number, supplier: string, date: string) => void;
   onAddNewItem: (item: Omit<InventoryItem, 'id'>) => string;
 }
 
-export const EntryForm: React.FC<EntryFormProps> = ({ inventory, onSubmit, onAddNewItem }) => {
+export const EntryForm: React.FC<EntryFormProps> = ({ inventory, transactions = [], onSubmit, onAddNewItem }) => {
   const [itemId, setItemId] = useState('');
   const [quantity, setQuantity] = useState('');
   const [supplier, setSupplier] = useState('');
@@ -43,6 +44,14 @@ export const EntryForm: React.FC<EntryFormProps> = ({ inventory, onSubmit, onAdd
   };
 
   const selectedItem = inventory.find(i => i.id === itemId);
+
+  const itemEntries = useMemo(() => {
+    if (!itemId || !selectedItem) return [];
+    return (transactions || [])
+      .filter(t => t.type === 'entry' && (t.itemId === itemId || t.itemName === selectedItem.item))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+  }, [itemId, transactions, selectedItem]);
 
   return (
     <div className="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden transition-all">
@@ -125,6 +134,27 @@ export const EntryForm: React.FC<EntryFormProps> = ({ inventory, onSubmit, onAdd
             />
           </div>
         </div>
+
+        {/* Historial de Entradas */}
+        {itemId && itemEntries.length > 0 && (
+          <div className="mt-8 pt-8 border-t border-gray-200 dark:border-slate-700">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+              <History size={16} />
+              Últimas Entradas
+            </h3>
+            <div className="space-y-2">
+              {itemEntries.map(entry => (
+                <div key={entry.id} className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-900/20">
+                  <div>
+                    <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{entry.date}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">{entry.detail}</p>
+                  </div>
+                  <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">+{entry.quantity}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="pt-4 flex justify-end">
           <button 

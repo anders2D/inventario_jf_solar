@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { InventoryItem } from '../types';
-import { Tags, Plus, Search, CheckCircle2, Package, ListChecks } from 'lucide-react';
+import { Tags, Plus, Search, CheckCircle2, Package, ListChecks, Edit3, X } from 'lucide-react';
 
 interface CategoryManagementProps {
   inventory: InventoryItem[];
@@ -20,6 +19,8 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [targetCategory, setTargetCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
 
   const filteredItems = inventory.filter(item => 
     item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -38,7 +39,6 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
     
     if (!trimmedName) return;
     
-    // Check for duplicates
     if (categories.includes(trimmedName)) {
       alert('Esta categoría ya existe');
       return;
@@ -46,6 +46,21 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
     
     onAddCategory(trimmedName);
     setNewCategoryName('');
+  };
+
+  const handleEditCategory = (oldName: string) => {
+    const newName = editingCategoryName.trim();
+    if (!newName || newName === oldName) {
+      setEditingCategory(null);
+      return;
+    }
+    if (categories.includes(newName)) {
+      alert('Esta categoría ya existe');
+      return;
+    }
+    onAddCategory(newName);
+    setEditingCategory(null);
+    setEditingCategoryName('');
   };
 
   const handleBulkAssign = () => {
@@ -95,9 +110,32 @@ export const CategoryManagement: React.FC<CategoryManagementProps> = ({
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Categorías Existentes</h4>
             <div className="flex flex-wrap gap-2">
               {categories.map(cat => (
-                <span key={cat} className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-xs font-bold border border-indigo-100 dark:border-indigo-800">
-                  {cat}
-                </span>
+                <div key={cat} className="flex items-center gap-1 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-xs font-bold border border-indigo-100 dark:border-indigo-800 group">
+                  {editingCategory === cat ? (
+                    <input
+                      type="text"
+                      value={editingCategoryName}
+                      onChange={(e) => setEditingCategoryName(e.target.value)}
+                      onBlur={() => handleEditCategory(cat)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleEditCategory(cat)}
+                      autoFocus
+                      className="bg-transparent outline-none w-20 text-indigo-700 dark:text-indigo-400 font-bold"
+                    />
+                  ) : (
+                    <>
+                      <span>{cat}</span>
+                      <button
+                        onClick={() => {
+                          setEditingCategory(cat);
+                          setEditingCategoryName(cat);
+                        }}
+                        className="ml-1 p-0.5 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                    </>
+                  )}
+                </div>
               ))}
             </div>
           </div>

@@ -1,8 +1,8 @@
-
 import React, { useRef, useState } from 'react';
 import { InventoryItem, Transaction } from '../types';
 import { Download, Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, History, Package } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { ImportPreviewModal } from './ImportPreviewModal';
 
 interface DataManagementProps {
   inventory: InventoryItem[];
@@ -23,11 +23,13 @@ export const DataManagement: React.FC<DataManagementProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewColumns, setPreviewColumns] = useState<string[]>([]);
+  const [pendingImportType, setPendingImportType] = useState<'inventory' | 'history' | null>(null);
+  const [pendingImportData, setPendingImportData] = useState<any[]>([]);
   
-  // Tabs for Data Management: 'inventory' or 'history'
   const [activeTab, setActiveTab] = useState<'inventory' | 'history'>('inventory');
-
-  // --- INVENTORY FUNCTIONS ---
 
   const handleExportInventory = (type: 'xlsx') => {
     try {
@@ -65,13 +67,28 @@ export const DataManagement: React.FC<DataManagementProps> = ({
 
       if (jsonData.length === 0) throw new Error("Archivo vacío.");
 
-      // Confirmation dialog if inventory exists
+      const columns = Object.keys(jsonData[0] || {});
+      setPreviewColumns(columns);
+      setPreviewData(jsonData);
+      setPendingImportType('inventory');
+      setPendingImportData(jsonData);
+      setShowPreview(true);
+
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmInventoryImport = async () => {
+    try {
       if (inventory.length > 0) {
         const confirmed = window.confirm(
           `Esto reemplazará ${inventory.length} items existentes. ¿Continuar?`
         );
         if (!confirmed) {
-          setIsProcessing(false);
+          setShowPreview(false);
           return;
         }
       }
@@ -79,14 +96,30 @@ export const DataManagement: React.FC<DataManagementProps> = ({
       const newInventory: InventoryItem[] = [];
       const existingIds = new Set(inventory.map(i => i.id));
       let duplicatesSkipped = 0;
+      let invalidRowsSkipped = 0;
 
-      jsonData.forEach((row: any, index: number) => {
+      const validateInventoryItem = (row: any): boolean => {
         const item = row['Item'] || row['item'] || row['Nombre'] || row['Producto'];
-        if (!item) return;
+        if (!item || !item.toString().trim()) return false;
+        
+        const stock = parseInt(row['Stock Actual'] || row['Stock'] || '0');
+        if (isNaN(stock) || stock < 0) return false;
+        
+        const threshold = parseInt(row['Umbral Alerta'] || row['umbral'] || row['Alerta'] || '10');
+        if (isNaN(threshold) || threshold < 1) return false;
+        
+        return true;
+      };
 
+      pendingImportData.forEach((row: any, index: number) => {
+        if (!validateInventoryItem(row)) {
+          invalidRowsSkipped++;
+          return;
+        }
+
+        const item = row['Item'] || row['item'] || row['Nombre'] || row['Producto'];
         const itemId = (row['ID'] || row['id'] || `import_${Date.now()}_${index}`).toString();
         
-        // Check for duplicates
         if (existingIds.has(itemId)) {
           duplicatesSkipped++;
           return;
@@ -106,20 +139,15 @@ export const DataManagement: React.FC<DataManagementProps> = ({
       if (newInventory.length === 0) throw new Error("No se encontraron datos válidos.");
 
       onImportInventory(newInventory);
-      const msg = duplicatesSkipped > 0 
-        ? `Inventario cargado: ${newInventory.length} items. (${duplicatesSkipped} duplicados omitidos)`
-        : `Inventario cargado: ${newInventory.length} items.`;
+      const msg = `Inventario cargado: ${newInventory.length} items.${duplicatesSkipped > 0 ? ` (${duplicatesSkipped} duplicados omitidos)` : ''}${invalidRowsSkipped > 0 ? ` (${invalidRowsSkipped} filas inválidas omitidas)` : ''}`;
       setSuccessMsg(msg);
+      setShowPreview(false);
       if (fileInputInventoryRef.current) fileInputInventoryRef.current.value = '';
 
     } catch (err) {
       setError((err as Error).message);
-    } finally {
-      setIsProcessing(false);
     }
   };
-
-  // --- HISTORY FUNCTIONS ---
 
   const handleExportHistory = (type: 'xlsx') => {
     try {
@@ -158,13 +186,28 @@ export const DataManagement: React.FC<DataManagementProps> = ({
 
       if (jsonData.length === 0) throw new Error("Archivo vacío.");
 
+      const columns = Object.keys(jsonData[0] || {});
+      setPreviewColumns(columns);
+      setPreviewData(jsonData);
+      setPendingImportType('history');
+      setPendingImportData(jsonData);
+      setShowPreview(true);
+
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmHistoryImport = async () => {
+    try {
       const newTransactions: Transaction[] = [];
-      jsonData.forEach((row: any) => {
+      pendingImportData.forEach((row: any) => {
         const tipoRaw = row['Tipo'] || row['tipo'];
         const item = row['Item'] || row['item'];
         if (!tipoRaw || !item) return;
 
-        // Map Spanish 'Entrada'/'Salida' back to 'entry'/'output'
         let type: 'entry' | 'output' = 'entry';
         if (tipoRaw.toString().toLowerCase().includes('salida')) type = 'output';
 
@@ -184,18 +227,25 @@ export const DataManagement: React.FC<DataManagementProps> = ({
 
       onImportTransactions(newTransactions);
       setSuccessMsg(`Historial procesado. ${newTransactions.length} registros analizados.`);
+      setShowPreview(false);
       if (fileInputHistoryRef.current) fileInputHistoryRef.current.value = '';
 
     } catch (err) {
       setError((err as Error).message);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
   const resetStatus = () => {
     setError(null);
     setSuccessMsg(null);
+  };
+
+  const handlePreviewConfirm = () => {
+    if (pendingImportType === 'inventory') {
+      handleConfirmInventoryImport();
+    } else if (pendingImportType === 'history') {
+      handleConfirmHistoryImport();
+    }
   };
 
   return (
@@ -351,6 +401,17 @@ export const DataManagement: React.FC<DataManagementProps> = ({
              : 'Nota: La carga de historial AGREGA registros nuevos (evita duplicados por ID).'}
         </div>
       </div>
+
+      {/* Preview Modal */}
+      <ImportPreviewModal
+        isOpen={showPreview}
+        title={pendingImportType === 'inventory' ? 'Vista Previa: Importar Inventario' : 'Vista Previa: Importar Historial'}
+        data={previewData}
+        columns={previewColumns}
+        onConfirm={handlePreviewConfirm}
+        onCancel={() => setShowPreview(false)}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 };

@@ -468,11 +468,11 @@ const App: React.FC = () => {
 
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
           {currentTab === 'dashboard' && <Dashboard inventory={inventory} transactions={transactions} onNavigate={setCurrentTab} />}
-          {currentTab === 'inventory' && <InventoryView inventory={inventory} categories={categories} onUpdateItem={handleUpdateItem} />}
+          {currentTab === 'inventory' && <InventoryView inventory={inventory} categories={categories} transactions={transactions} onUpdateItem={handleUpdateItem} />}
           {currentTab === 'thresholds' && <ThresholdView inventory={inventory} onUpdateThreshold={handleUpdateThreshold} />}
           {currentTab === 'projects' && <ProjectsView projects={projects} transactions={transactions} onAddProject={handleAddProject} onToggleStatus={handleToggleProjectStatus} />}
           {currentTab === 'categories' && <CategoryManagement inventory={inventory} categories={categories} onAddCategory={handleAddCategory} onAssignCategory={handleAssignCategory} />}
-          {currentTab === 'entry' && <EntryForm inventory={inventory} onSubmit={handleEntrySubmit} onAddNewItem={handleAddNewItem} />}
+          {currentTab === 'entry' && <EntryForm inventory={inventory} transactions={transactions} onSubmit={handleEntrySubmit} onAddNewItem={handleAddNewItem} />}
           {currentTab === 'output' && <OutputForm inventory={inventory} projects={projects} onSubmit={handleBulkOutputSubmit} />}
           {currentTab === 'history' && <HistoryView transactions={transactions} />}
           {currentTab === 'data' && <DataManagement inventory={inventory} transactions={transactions} onImportInventory={handleImportInventory} onImportTransactions={handleImportTransactions} />}

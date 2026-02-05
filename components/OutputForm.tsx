@@ -235,25 +235,77 @@ export const OutputForm: React.FC<OutputFormProps> = ({ inventory, projects, onS
         </div>
 
         {/* Bloque 4: Resumen y Envío */}
-        <div className="pt-10 flex flex-col sm:flex-row justify-between items-center gap-8 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex gap-10">
-            <div className="text-center sm:text-left">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Items Únicos</p>
-              <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{selectedItems.length}</p>
+        <div className="pt-10 space-y-8 border-t border-slate-100 dark:border-slate-800">
+          {/* Preview de Stock */}
+          {selectedItems.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                <AlertCircle size={18} className="text-blue-500" />
+                Preview: Stock Después del Despacho
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                      <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest">Producto</th>
+                      <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-center">Stock Actual</th>
+                      <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-center">A Despachar</th>
+                      <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-center">Stock Final</th>
+                      <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {selectedItems.map(item => {
+                      const stockFinal = item.availableStock - item.requestedQty;
+                      const originalItem = inventory.find(i => i.id === item.id);
+                      const isLowStock = stockFinal <= (originalItem?.lowStockThreshold || 0);
+                      return (
+                        <tr key={item.id} className={`${isLowStock ? 'bg-amber-50 dark:bg-amber-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}>
+                          <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">{item.item}</td>
+                          <td className="px-4 py-3 text-center font-black text-blue-600 dark:text-blue-400">{item.availableStock}</td>
+                          <td className="px-4 py-3 text-center font-black text-amber-600 dark:text-amber-400">-{item.requestedQty}</td>
+                          <td className="px-4 py-3 text-center font-black text-slate-900 dark:text-white">{stockFinal}</td>
+                          <td className="px-4 py-3 text-center">
+                            {isLowStock ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-[9px] font-black uppercase">
+                                ⚠ Bajo
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-[9px] font-black uppercase">
+                                ✓ OK
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="text-center sm:text-left">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unidades en Total</p>
-              <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{totalUnits}</p>
+          )}
+
+          {/* Resumen y Botón */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-8">
+            <div className="flex gap-10">
+              <div className="text-center sm:text-left">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Items Únicos</p>
+                <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{selectedItems.length}</p>
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unidades en Total</p>
+                <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{totalUnits}</p>
+              </div>
             </div>
+            <button 
+              type="submit"
+              disabled={selectedItems.length === 0 || !selectedProjectId || selectedItems.some(i => i.requestedQty > i.availableStock || i.requestedQty <= 0)}
+              className="w-full sm:w-auto flex items-center justify-center gap-4 bg-amber-600 hover:bg-amber-700 text-white font-black py-5 px-12 rounded-3xl transition-all shadow-2xl shadow-amber-500/30 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed group"
+            >
+              <CheckCircle2 size={24} strokeWidth={3} className="group-hover:rotate-12 transition-transform" />
+              CONFIRMAR DESPACHO
+            </button>
           </div>
-          <button 
-            type="submit"
-            disabled={selectedItems.length === 0 || !selectedProjectId || selectedItems.some(i => i.requestedQty > i.availableStock || i.requestedQty <= 0)}
-            className="w-full sm:w-auto flex items-center justify-center gap-4 bg-amber-600 hover:bg-amber-700 text-white font-black py-5 px-12 rounded-3xl transition-all shadow-2xl shadow-amber-500/30 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed group"
-          >
-            <CheckCircle2 size={24} strokeWidth={3} className="group-hover:rotate-12 transition-transform" />
-            CONFIRMAR DESPACHO
-          </button>
         </div>
       </form>
     </div>
