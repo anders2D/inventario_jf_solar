@@ -23,6 +23,7 @@ interface InventoryViewProps {
   transactions?: any[];
   onUpdateItem: (item: InventoryItem) => void;
   onDeleteItem?: (id: string) => void;
+  onAddItem?: (item: Omit<InventoryItem, 'id'>) => Promise<void>;
 }
 
 export const InventoryView: React.FC<InventoryViewProps> = ({ 
@@ -30,12 +31,13 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   categories,
   transactions = [],
   onUpdateItem,
-  onDeleteItem
+  onDeleteItem,
+  onAddItem
 }) => {
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
-  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null | undefined>(undefined);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [detailsItem, setDetailsItem] = useState<InventoryItem | null>(null);
 
@@ -58,11 +60,13 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     return { label: 'Disponible', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800' };
   };
 
-  const handleEditSave = (updatedData: Omit<InventoryItem, 'id'>) => {
-    if (editingItem) {
+  const handleEditSave = async (updatedData: Omit<InventoryItem, 'id'>) => {
+    if (editingItem && editingItem.id) {
       onUpdateItem({ ...updatedData, id: editingItem.id });
-      setEditingItem(null);
+    } else if (onAddItem) {
+      await onAddItem(updatedData);
     }
+    setEditingItem(undefined);
   };
 
   return (
@@ -98,7 +102,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setEditingItem({} as InventoryItem)}
+            onClick={() => setEditingItem(null)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm"
           >
             <Package size={18} />
@@ -332,15 +336,13 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
       )}
 
       {/* Edit/Create Modal */}
-      {editingItem && (
-        <NewItemModal 
-          isOpen={!!editingItem} 
-          onClose={() => setEditingItem(null)} 
-          onSave={handleEditSave}
-          categories={categories}
-          initialData={editingItem && editingItem.id ? editingItem : undefined}
-        />
-      )}
+      <NewItemModal 
+        isOpen={editingItem !== undefined} 
+        onClose={() => setEditingItem(undefined)} 
+        onSave={handleEditSave}
+        categories={categories}
+        initialData={editingItem || undefined}
+      />
 
       {/* Details Modal */}
       <ProductDetailsModal

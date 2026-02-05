@@ -16,8 +16,8 @@ export const ThresholdView: React.FC<ThresholdViewProps> = ({ inventory, onUpdat
   const [newAlertThreshold, setNewAlertThreshold] = useState('');
 
   const itemsWithoutThreshold = useMemo(() => {
-    return inventory.filter(item => !localThresholds[item.id] && item.lowStockThreshold === 0);
-  }, [inventory, localThresholds]);
+    return inventory;
+  }, [inventory]);
 
   const handleCreateAlert = () => {
     if (newAlertItemId && newAlertThreshold) {
@@ -167,7 +167,7 @@ export const ThresholdView: React.FC<ThresholdViewProps> = ({ inventory, onUpdat
                     </td>
                   </tr>
                 );
-              })}\
+              })}
             </tbody>
           </table>
           

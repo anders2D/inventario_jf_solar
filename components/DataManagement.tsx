@@ -118,15 +118,15 @@ export const DataManagement: React.FC<DataManagementProps> = ({
         }
 
         const item = row['Item'] || row['item'] || row['Nombre'] || row['Producto'];
-        const itemId = (row['ID'] || row['id'] || `import_${Date.now()}_${index}`).toString();
+        const itemId = (row['ID'] || row['id'] || '').toString().trim();
         
-        if (existingIds.has(itemId)) {
+        if (itemId && existingIds.has(itemId)) {
           duplicatesSkipped++;
           return;
         }
 
         newInventory.push({
-          id: itemId,
+          id: itemId || crypto.randomUUID(),
           item: item.toString().trim(),
           brand: (row['Marca'] || row['marca'] || '').toString().trim(),
           reference: (row['Referencia'] || row['referencia'] || '').toString().trim(),
@@ -211,12 +211,14 @@ export const DataManagement: React.FC<DataManagementProps> = ({
         let type: 'entry' | 'output' = 'entry';
         if (tipoRaw.toString().toLowerCase().includes('salida')) type = 'output';
 
+        const itemId = (row['ItemId'] || row['itemId'] || '').toString().trim();
+
         newTransactions.push({
-          id: (row['ID'] || row['id'] || Date.now() + Math.random()).toString(),
+          id: (row['ID'] || row['id'] || crypto.randomUUID()).toString(),
           date: row['Fecha'] || row['fecha'] || new Date().toISOString().split('T')[0],
           type: type,
           itemName: item.toString(),
-          itemId: (row['ItemId'] || row['itemId'] || 'unknown').toString(),
+          itemId: itemId || undefined,
           quantity: parseInt(row['Cantidad'] || row['cantidad'] || '0'),
           detail: (row['Detalle'] || row['detalle'] || '').toString(),
           responsible: (row['Responsable'] || row['responsable'] || '').toString()

@@ -57,18 +57,25 @@ export const inventoryService = {
   },
 
   async update(id: string, item: Partial<InventoryItem>): Promise<void> {
+    if (!id || id === 'undefined') {
+      throw new Error('Invalid item ID for update');
+    }
+    
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+    
+    if (item.item !== undefined) updateData.item = item.item;
+    if (item.brand !== undefined) updateData.brand = item.brand;
+    if (item.reference !== undefined) updateData.reference = item.reference;
+    if (item.currentStock !== undefined) updateData.current_stock = item.currentStock;
+    if (item.category !== undefined) updateData.category = item.category;
+    if (item.lowStockThreshold !== undefined) updateData.low_stock_threshold = item.lowStockThreshold;
+    if (item.imageUrl !== undefined) updateData.image_url = item.imageUrl;
+    
     const { error } = await supabase
       .from('inventory_items')
-      .update({
-        item: item.item,
-        brand: item.brand,
-        reference: item.reference,
-        current_stock: item.currentStock,
-        category: item.category,
-        low_stock_threshold: item.lowStockThreshold,
-        image_url: item.imageUrl,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id);
     
     if (error) throw error;
@@ -133,12 +140,12 @@ export const transactionService = {
       .insert({
         type: transaction.type,
         date: transaction.date,
-        item_id: transaction.itemId,
+        item_id: transaction.itemId || null,
         item_name: transaction.itemName,
         quantity: transaction.quantity,
         detail: transaction.detail,
-        project_id: transaction.projectId,
-        responsible: transaction.responsible,
+        project_id: transaction.projectId || null,
+        responsible: transaction.responsible || null,
         created_at: new Date().toISOString()
       });
     
@@ -154,8 +161,8 @@ export const transactionService = {
         item_name: transaction.itemName,
         quantity: transaction.quantity,
         detail: transaction.detail,
-        project_id: transaction.projectId,
-        responsible: transaction.responsible,
+        project_id: transaction.projectId || null,
+        responsible: transaction.responsible || null,
         created_at: new Date().toISOString()
       })
       .select()
@@ -169,9 +176,9 @@ export const transactionService = {
         .insert(
           items.map(item => ({
             transaction_id: transData.id,
-            item_id: item.itemId,
+            item_id: item.itemId || null,
             item_name: item.itemName,
-            brand: item.brand,
+            brand: item.brand || null,
             quantity: item.quantity
           }))
         );
@@ -232,6 +239,15 @@ export const projectService = {
         finished_at: status === 'finished' ? new Date().toISOString().split('T')[0] : null,
         updated_at: new Date().toISOString()
       })
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('projects')
+      .delete()
       .eq('id', id);
     
     if (error) throw error;

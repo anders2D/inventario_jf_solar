@@ -8,7 +8,7 @@ interface EntryFormProps {
   inventory: InventoryItem[];
   transactions?: Transaction[];
   onSubmit: (itemId: string, quantity: number, supplier: string, date: string) => void;
-  onAddNewItem: (item: Omit<InventoryItem, 'id'>) => string;
+  onAddNewItem: (item: Omit<InventoryItem, 'id'>) => Promise<string>;
 }
 
 export const EntryForm: React.FC<EntryFormProps> = ({ inventory, transactions = [], onSubmit, onAddNewItem }) => {

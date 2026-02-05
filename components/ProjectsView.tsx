@@ -56,7 +56,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, transactio
     if (!projectDetails?.project) return;
     const { project, transactions: history } = projectDetails;
 
-    // Desglosar transacciones para el reporte (unir items de despachos múltiples)
     const exportData = history.flatMap(t => {
       if (t.items && t.items.length > 0) {
         return t.items.map(item => ({
@@ -76,6 +75,11 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, transactio
         }];
       }
     });
+
+    if (exportData.length === 0) {
+      alert('No hay datos para exportar');
+      return;
+    }
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();

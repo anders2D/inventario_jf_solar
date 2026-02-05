@@ -157,6 +157,22 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteProject = async (id: string) => {
+    try {
+      const hasTransactions = transactions.some(t => t.projectId === id);
+      if (hasTransactions) {
+        showSuccessModal('No se puede eliminar un proyecto con transacciones asociadas');
+        return;
+      }
+      await projectService.delete(id);
+      setProjects(prev => prev.filter(p => p.id !== id));
+      showSuccessModal('Proyecto eliminado exitosamente.');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      showSuccessModal(`Error: ${(error as Error).message}`);
+    }
+  };
+
   const handleToggleProjectStatus = async (id: string) => {
     try {
       const project = projects.find(p => p.id === id);
@@ -468,9 +484,9 @@ const App: React.FC = () => {
 
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
           {currentTab === 'dashboard' && <Dashboard inventory={inventory} transactions={transactions} onNavigate={setCurrentTab} />}
-          {currentTab === 'inventory' && <InventoryView inventory={inventory} categories={categories} transactions={transactions} onUpdateItem={handleUpdateItem} />}
+          {currentTab === 'inventory' && <InventoryView inventory={inventory} categories={categories} transactions={transactions} onUpdateItem={handleUpdateItem} onAddItem={async (item) => { await handleAddNewItem(item); }} />}
           {currentTab === 'thresholds' && <ThresholdView inventory={inventory} onUpdateThreshold={handleUpdateThreshold} />}
-          {currentTab === 'projects' && <ProjectsView projects={projects} transactions={transactions} onAddProject={handleAddProject} onToggleStatus={handleToggleProjectStatus} />}
+          {currentTab === 'projects' && <ProjectsView projects={projects} transactions={transactions} onAddProject={handleAddProject} onToggleStatus={handleToggleProjectStatus} onDeleteProject={handleDeleteProject} />}
           {currentTab === 'categories' && <CategoryManagement inventory={inventory} categories={categories} onAddCategory={handleAddCategory} onAssignCategory={handleAssignCategory} />}
           {currentTab === 'entry' && <EntryForm inventory={inventory} transactions={transactions} onSubmit={handleEntrySubmit} onAddNewItem={handleAddNewItem} />}
           {currentTab === 'output' && <OutputForm inventory={inventory} projects={projects} onSubmit={handleBulkOutputSubmit} />}
